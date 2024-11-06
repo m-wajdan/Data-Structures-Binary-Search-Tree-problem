@@ -64,9 +64,14 @@ class playerBST
 {
 public:
     playerNode* root;
-    
+    playerNode* topPlayers[10] = {nullptr}; // Array to hold top 10 players
+
     playerBST() : root(nullptr) {}
 
+void setSize(int s)
+{
+
+}
 void insert(string playerId, string name, string phoneNo, string email, string password, games_played_node* gamesPlayed, int gameCount) {
         root = insertRec(root, playerId, name, phoneNo, email, password, gamesPlayed, gameCount);
     }
@@ -113,7 +118,52 @@ int getLayerNumber(playerNode* node, const string& playerId, int currentLayer = 
 
     // Search in the right subtree
     return getLayerNumber(node->right, playerId, currentLayer + 1);
-}
+    }
+    void showPathToPlayer(const string& playerId) 
+    {
+        bool found = false;
+
+        // First traversal: Check if the node exists in the tree
+        if (findNode(root, playerId)) {
+            found = true;
+        }
+
+        if (found) {
+            cout << "Path to player with ID '" << playerId << "': ";
+            printPathToNode(root, playerId);
+            cout << " -> Found!" << endl;
+        } else {
+            cout << "Player with ID '" << playerId << "' not found in the BST." << endl;
+        }
+    }
+    bool hasPLayed(const string& playerId, const string& gameId)
+    {
+        playerNode* player = search(root, playerId);
+    
+        if (player == nullptr) 
+        {
+            cout << "Player not found." << endl;
+            return false;
+        }
+
+         int left = 0, right = player->gameCount - 1;
+
+    while (left <= right) 
+        {
+        int mid = left + (right - left) / 2;
+        if (player->gamesPlayed[mid].gameId == gameId) {
+            return true; // Game found
+        } else if (player->gamesPlayed[mid].gameId < gameId) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+        }
+    
+    return false; // Game not found
+    }
+
+
 
 
 private:
@@ -125,6 +175,7 @@ private:
             {
                 newNode->gamesPlayed[i] = gamesPlayed[i];
             }
+            updateTopPlayers(newNode); // this updates the array everytime the node is added to store top 10 max game played players
             return newNode;
         }
 
@@ -140,7 +191,23 @@ private:
 
         return node;
     }
+    void updateTopPlayers(playerNode* newNode) 
+    {
+    int newCount = newNode->gameCount;
 
+    // Find position in the array for the new node
+    for (int i = 0; i < 10; i++) {
+        if (topPlayers[i] == nullptr || newCount > topPlayers[i]->gameCount) {
+            // Shift elements to the right to make space
+            for (int j = 9; j > i; j--) {
+                topPlayers[j] = topPlayers[j - 1];
+            }
+            // Insert the new node at the found position
+            topPlayers[i] = newNode;
+            break;
+        }
+    }
+    }
     void printInOrder(playerNode* node, int& count) 
     {
     if (node == nullptr || count >= 10) return;
@@ -228,7 +295,32 @@ private:
     }
     return node;
     }
+        bool findNode(playerNode* node, const string& playerId) {
+        if (node == nullptr) return false;
+        if (node->playerId == playerId) return true;
 
+        // Search in left and right subtrees
+        return findNode(node->left, playerId) || findNode(node->right, playerId);
+    }
+
+    // Second traversal to print path to the node
+    bool printPathToNode(playerNode* node, const string& playerId) {
+        if (node == nullptr) return false;
+
+        // Print the current node's ID
+        cout << node->playerId;
+        if (node->playerId == playerId) return true;
+
+        cout << " -> ";  // Separator for path
+
+        // Traverse left and right subtrees
+        if (printPathToNode(node->left, playerId) || printPathToNode(node->right, playerId)) {
+            return true;
+        }
+
+        // Backtrack if not found (erase last path step)
+        return false;
+    }
 
 };
 
@@ -394,57 +486,8 @@ gameNode* findMin(gameNode* node)
 
 };
 
-// class Database
-// {
-// private:
-//     playerBST players;
-//     gameBST games;
-// public:
-//     Database(int seed)
-//     {
-//         // Initialize database with seed logic here
-//     }
-//     void loadPlayersFromCSV(const string& filePath)
-//     {
-//         // Load player data from CSV with seed-based line-skipping logic here
-//     }
-//     void loadGamesFromCSV(const string& filePath)
-//     {
-//         // Load game data from CSV logic here
-//     }
-//     playerNode* getPlayer(string playerId)
-//     {
-//         // Get player node by ID logic here
-//     }
-//     gameNode* getGame(string gameId)
-//     {
-//         // Get game node by ID logic here
-//     }
-//     void addPlayer(string playerId, string name, string phoneNo, string email, string password)
-//     {
-//         // Add player logic here
-//     }
-//     void addGame(string gameId, string name, string developer, string publisher, float fileSize, int downloads)
-//     {
-//         // Add game logic here
-//     }
-//     void deletePlayer(string playerId)
-//     {
-//         // Delete player logic here
-//     }
-//     void deleteGame(string gameId)
-//     {
-//         // Delete game logic here
-//     }
-//     void topNPlayers(int N)
-//     {
-//         // Find top N players by games played logic here
-//     }
-//     bool hasPlayed(string playerId, string gameId)
-//     {
-//         // Check if player has played specific game logic here
-//     }
-// };
+
+
 void loadGamesFromFile(const string& filePath, gameBST& games) 
 {
     ifstream file(filePath);
@@ -538,28 +581,59 @@ void loadPlayersFromFile(const string& filePath, playerBST& players) {
     file.close();
 }
 
-int main()
+class Database
 {
-    gameBST games;
-    loadGamesFromFile("Games.txt", games);
-    cout << "Games loaded based on random selection criteria." << endl;
-    cout << "\nPrinting the Game BST in sorted order:" << endl;
-    games.printGameBST();
-cout<<"-------------------------------------------------------------------------------";
+private:
     playerBST players;
+    gameBST games;
+public:
+void loadPlayersFromCSV()
+{
+ 
     loadPlayersFromFile("Players.txt", players);
     cout << "Players loaded based on random selection criteria." << endl;
+    printPlayer();
+    
+}
+void loadGamesFromCSV()
+{
+    loadGamesFromFile("Games.txt", games);
+    cout << "Games loaded based on random selection criteria." << endl;
+    PrintGame();
+}
+void printPlayer()
+{
     cout << "\nPrinting the Player BST in sorted order:" << endl;
-    players.printPlayerBST();
+    players.printPlayerBST();    
+}
+void PrintGame()
+{
+    cout << "\nPrinting the Game BST in sorted order:" << endl;
+    games.printGameBST();
+}
 
-cout<<"-------------------------------------------------------------------------------";
 
-     // Search for a player by playerId
+void deletePlayer()
+{
+    string playerIdToDelete;
+    cout << "\nEnter Player ID to delete: ";
+    cin >> playerIdToDelete;
+    players.deletePlayer(playerIdToDelete);
+}
+void deleteGame()
+{
+    string gameIdToDelete;
+    cout << "\nEnter Game ID to delete: ";
+    cin >> gameIdToDelete;
+    games.deleteGame(gameIdToDelete);
+    cout<<"\n you can verify the game is deleted from here\n";
+    games.printGameBST();
+}
+void searchPlayerDetail()
+{
     string searchPlayerId;
     cout << "\nEnter Player ID to search: ";
     cin >> searchPlayerId;
-
-    // Call the searchPlayer function
     playerNode* player = players.searchPlayer(searchPlayerId);
     if (player) {
         cout << "Player found!" << endl;
@@ -577,64 +651,233 @@ cout<<"-------------------------------------------------------------------------
     } else {
         cout << "Player with ID '" << searchPlayerId << "' not found." << endl;
     }
-
-cout<<"-------------------------------------------------------------------------------";
-// Search for a game by gameId
-string searchGameId;
-cout << "\nEnter Game ID to search: ";
-cin >> searchGameId;
-
-gameNode* game = games.searchGame(searchGameId);
-if (game) {
-    cout << "Game found!" << endl;
-    cout << "Game ID: " << game->gameId << ", Name: " << game->name 
-         << ", Developer: " << game->developer << ", Publisher: " << game->publisher 
-         << ", File Size: " << game->fileSize << " MB, Downloads: " << game->downloads << endl;
-} else {
-    cout << "Game with ID '" << searchGameId << "' not found." << endl;
 }
-
-cout<<"-------------------------------------------------------------------------------";
-
-string gameIdToDelete;
-cout << "\nEnter Game ID to delete: ";
-cin >> gameIdToDelete;
-games.deleteGame(gameIdToDelete);
-cout<<"\n you can verify the game is deleted from here\n";
-games.printGameBST();
-cout<<"-------------------------------------------------------------------------------";
-string playerIdToDelete;
-cout << "\nEnter Player ID to delete: ";
-cin >> playerIdToDelete;
-players.deletePlayer(playerIdToDelete);
-
-string gameL,playerL;
-cout<<"\n Enter game's id to check for the layer: ";
-cin>>gameL;
-cout<<"\n Enter player's id to check for the layer: ";
-cin>>playerL;
-
-int gameLayer = games.getLayerNumber(games.root, gameL);
-if (gameLayer != -1) 
+void searchGame()
 {
-    cout << "Game with ID " << gameL << " is at layer " << gameLayer << "." << endl;
-}
-else {
-    cout << "Game with ID " << gameL << " not found in the tree." << endl;
-}
+    string searchGameId;
+    cout << "\nEnter Game ID to search: ";
+    cin >> searchGameId;
 
-int playerLayer = players.getLayerNumber(players.root, playerL);
-if (playerLayer != -1) 
+    gameNode* game = games.searchGame(searchGameId);
+    if (game) {
+        cout << "Game found!" << endl;
+        cout << "Game ID: " << game->gameId << ", Name: " << game->name 
+            << ", Developer: " << game->developer << ", Publisher: " << game->publisher 
+            << ", File Size: " << game->fileSize << " MB, Downloads: " << game->downloads << endl;
+    } else {
+        cout << "Game with ID '" << searchGameId << "' not found." << endl;
+    }
+}
+void GamesLayer()
 {
-    cout << "Player with ID " << playerL << " is at layer " << playerLayer << "." << endl;
-} 
-else {
-    cout << "Player with ID " << playerL << " not found in the tree." << endl;
+    string gameL;
+    cout<<"\n Enter game's id to check for the layer: ";
+    cin>>gameL;
+    int gameLayer = games.getLayerNumber(games.root, gameL);
+    if (gameLayer != -1) 
+    {
+        cout << "Game with ID " << gameL << " is at layer " << gameLayer << "." << endl;
+    }
+    else {
+        cout << "Game with ID " << gameL << " not found in the tree." << endl;
+    }
+  
+}
+void PlayersLayer()
+{
+    string playerL;
+    cout<<"\n Enter player's id to check for the layer: ";
+    cin>>playerL;
+    int playerLayer = players.getLayerNumber(players.root, playerL);
+    if (playerLayer != -1) 
+    {
+        cout << "Player with ID " << playerL << " is at layer " << playerLayer << "." << endl;
+    } 
+    else {
+        cout << "Player with ID " << playerL << " not found in the tree." << endl;
+    }
 }
 
+void TotalLayers()
+{
+    cout << "Number of layers in Game BST: " << games.getNumberOfLayers() << endl;                // gives the max subtree which is the max layer of that binary tree
+    cout << "Number of layers in Player BST: " << players.getNumberOfLayers() << endl;
+}
+ void playerPath()
+{
+        string playerId;
+        cout << "Enter player's id to check for the path: ";
+        cin>>playerId;
+        players.showPathToPlayer(playerId);
+}
+   
+void editPlayer() 
+{
+    string searchPlayerId;
+    cout << "\nEnter Player ID to search: ";
+    cin >> searchPlayerId;
+    
+    playerNode* player = players.searchPlayer(searchPlayerId); // Assuming `players` is your BST
 
-// cout << "Number of layers in Game BST: " << games.getNumberOfLayers() << endl;                // gives the max subtree which is the max layer of that binary tree
-// cout << "Number of layers in Player BST: " << players.getNumberOfLayers() << endl;
+    if (player) {
+        cout << "\nPlayer found!" << endl;
+        cout << "Player ID: " << player->playerId << ", Name: " << player->name 
+             << ", Phone: " << player->phoneNo << ", Email: " << player->email 
+             << ", Password: " << player->password << endl;
+
+        // Print the games played by this player
+        cout << "\nGames Played:" << endl;
+        for (int i = 0; i < player->gameCount; i++) {
+            cout << "    Game ID: " << player->gamesPlayed[i].gameId 
+                 << ", Hours Played: " << player->gamesPlayed[i].hoursPlayed 
+                 << ", Achievements: " << player->gamesPlayed[i].achievements << endl;
+        }
+
+        // Ask if the user wants to edit the player's data
+        char choice;
+        cout << "\nDo you want to edit the entry of this player? (y/n): ";
+        cin >> choice;
+
+        if (choice == 'y' || choice == 'Y') {
+            bool editing = true;
+            while (editing) {
+                cout << "\nWhat would you like to edit?" << endl;
+                cout << "1. Name" << endl;
+                cout << "2. Phone Number" << endl;
+                cout << "3. Email" << endl;
+                cout << "4. Password" << endl;
+                cout << "5. Games Played" << endl;
+                cout << "6. Exit Editing" << endl;
+                cout << "Enter your choice: ";
+                int option;
+                cin >> option;
+
+                switch (option) {
+                    case 1:
+                        cout << "Enter new name: ";
+                        cin >> player->name;
+                        break;
+                    case 2:
+                        cout << "Enter new phone number: ";
+                        cin >> player->phoneNo;
+                        break;
+                    case 3:
+                        cout << "Enter new email: ";
+                        cin >> player->email;
+                        break;
+                    case 4:
+                        cout << "Enter new password: ";
+                        cin >> player->password;
+                        break;
+                    case 5:
+                        cout << "Enter the index of the game to edit (0 to " << player->gameCount - 1 << "): ";
+                        int gameIndex;
+                        cin >> gameIndex;
+                        if (gameIndex >= 0 && gameIndex < player->gameCount) {
+                            cout << "Current game data:" << endl;
+                            cout << "    Game ID: " << player->gamesPlayed[gameIndex].gameId 
+                                 << ", Hours Played: " << player->gamesPlayed[gameIndex].hoursPlayed 
+                                 << ", Achievements: " << player->gamesPlayed[gameIndex].achievements << endl;
+                            cout << "Enter new game ID: ";
+                            cin >> player->gamesPlayed[gameIndex].gameId;
+                            cout << "Enter hours played: ";
+                            cin >> player->gamesPlayed[gameIndex].hoursPlayed;
+                            cout << "Enter achievements: ";
+                            cin >> player->gamesPlayed[gameIndex].achievements;
+                        } else {
+                            cout << "Invalid game index." << endl;
+                        }
+                        break;
+                    case 6:
+                        editing = false;
+                        break;
+                    default:
+                        cout << "Invalid choice. Please try again." << endl;
+                        break;
+                }
+            }
+            cout << "Player information updated." << endl;
+        } else {
+            cout << "Edit cancelled." << endl;
+        }
+
+    } else {
+        cout << "Player with ID '" << searchPlayerId << "' not found." << endl;
+    }
+}
+void showPrePattern()
+{
+    string ID;
+    cout << "Enter player ID: ";
+    cin >> ID;
+    players.showPathToPlayer(ID);
+}
+void hasPlayed()
+{
+    string playerId, gameId;
+    
+    cout << "Enter Player ID: ";
+    cin >> playerId;
+    cout << "Enter Game ID: ";
+    cin >> gameId;
+
+    // Call the playerBST class function
+    if (players.hasPLayed(playerId, gameId)) 
+    {
+        cout << "Player has played the game." << endl;
+    } else {
+        cout << "Player has not played the game." << endl;
+    }
+}
+void topNPlayers(int n)
+{
+    cout<<"Top "<<n<<" Players are: "<<endl;
+        for (int i=0;i<n;i++)
+        {
+            cout <<"Name of Player:  "<< players.topPlayers[i]->name<<endl;
+        }
+}
+//---------------------------------------------------
+        void addPlayer(string playerId, string name, string phoneNo, string email, string password)
+    {
+        // Add player logic here
+
+    }
+    void addGame(string gameId, string name, string developer, string publisher, float fileSize, int downloads)
+    {
+        // Add game logic here
+    }
+    playerNode* getPlayer(string playerId)
+    {
+            // Get player node by ID logic here
+            return nullptr;
+    }
+    gameNode* getGame(string gameId)
+    {
+            // Get game node by ID logic here
+            return nullptr;
+    }
+    //-------------------------------------------------------------------------
+};
+
+
+
+int main()
+{
+Database db;
+db.loadGamesFromCSV();
+db.loadPlayersFromCSV();
+// db.deleteGame();
+// db.deletePlayer();
+// db.searchGame();
+// db.searchPlayerDetail();
+// db.TotalLayers();
+// db.GamesLayer();
+// db.PlayersLayer();
+// db.editPlayer();
+//db.showPrePattern();
+// db.hasPlayed();
+db.topNPlayers(5);
 
 return 0;
 }
