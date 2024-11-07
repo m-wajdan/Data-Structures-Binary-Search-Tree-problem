@@ -60,74 +60,59 @@ public:
 
 
 
-class playerBST
-{
+class playerBST {
 public:
     playerNode* root;
-    playerNode* topPlayers[25] = {nullptr}; // Array to hold top 25 players
+    playerNode* topPlayers[25] = {nullptr}; // Array to hold the top 25 players
 
     playerBST() : root(nullptr) {}
 
-void setSize(int s)
-{
-
-}
-void insert(string playerId, string name, string phoneNo, string email, string password, games_played_node* gamesPlayed, int gameCount) {
+    // Inserts a new player into the BST.
+    void insert(string playerId, string name, string phoneNo, string email, string password, games_played_node* gamesPlayed, int gameCount) {
         root = insertRec(root, playerId, name, phoneNo, email, password, gamesPlayed, gameCount);
     }
-void printPlayerBST() 
-    {
-        int count=0;
-        printInOrder(root,count);
+
+    // Prints the players in the BST in an in-order traversal (up to 10 players).
+    void printPlayerBST() {
+        int count = 0;
+        printInOrder(root, count);
     }
-playerNode* searchPlayer(const string& playerId) 
-    {
+
+    // Searches for a player in the BST by their ID.
+    playerNode* searchPlayer(const string& playerId) {
         return search(root, playerId);
     }
-void deletePlayer(const string& playerId) 
-    {
+
+    // Deletes a player from the BST by their ID.
+    void deletePlayer(const string& playerId) {
         root = deletePlayer(root, playerId);
     }
-int getHeight(playerNode* node) 
-    {
-    if (node == nullptr) return 0;
-    
-    int leftHeight = getHeight(node->left);
-    int rightHeight = getHeight(node->right);
 
-    return 1 + max(leftHeight, rightHeight);
+    // Returns the height of a node in the BST.
+    int getHeight(playerNode* node) {
+        if (node == nullptr) return 0;
+        int leftHeight = getHeight(node->left);
+        int rightHeight = getHeight(node->right);
+        return 1 + max(leftHeight, rightHeight);
     }
 
-int getNumberOfLayers() 
-    {
-    return getHeight(root);
-    }
-int getLayerNumber(playerNode* node, const string& playerId, int currentLayer = 1) 
-    {
-    if (node == nullptr) {
-        return -1; 
+    // Returns the number of layers (height) of the BST.
+    int getNumberOfLayers() {
+        return getHeight(root);
     }
 
-    if (node->playerId == playerId) {
-        return currentLayer; 
+    // Finds the layer number of a player by their ID.
+    int getLayerNumber(playerNode* node, const string& playerId, int currentLayer = 1) {
+        if (node == nullptr) return -1;
+        if (node->playerId == playerId) return currentLayer;
+        int leftLayer = getLayerNumber(node->left, playerId, currentLayer + 1);
+        if (leftLayer != -1) return leftLayer;
+        return getLayerNumber(node->right, playerId, currentLayer + 1);
     }
 
-    int leftLayer = getLayerNumber(node->left, playerId, currentLayer + 1);
-    if (leftLayer != -1) return leftLayer;
-
-
-    return getLayerNumber(node->right, playerId, currentLayer + 1);
-    }
-    void showPathToPlayer(const string& playerId) 
-    {
-        bool found = false;
-
-        
+    // Displays the path to a player by their ID if they exist in the BST.
+    void showPathToPlayer(const string& playerId) {
         if (findNode(root, playerId)) {
-            found = true;
-        }
-
-        if (found) {
             cout << "Path to player with ID '" << playerId << "': ";
             printPathToNode(root, playerId);
             cout << " -> Found!" << endl;
@@ -135,43 +120,35 @@ int getLayerNumber(playerNode* node, const string& playerId, int currentLayer = 
             cout << "Player with ID '" << playerId << "' not found in the BST." << endl;
         }
     }
-    bool hasPLayed(const string& playerId, const string& gameId)
-    {
+
+    // Checks if a player has played a specific game.
+    bool hasPLayed(const string& playerId, const string& gameId) {
         playerNode* player = search(root, playerId);
-    
-        if (player == nullptr) 
-        {
+        if (player == nullptr) {
             cout << "Player not found." << endl;
             return false;
         }
 
-         int left = 0, right = player->gameCount - 1;
-
-    while (left <= right) 
-        {
-        int mid = left + (right - left) / 2;
-        if (player->gamesPlayed[mid].gameId == gameId) {
-            return true;
-        } else if (player->gamesPlayed[mid].gameId < gameId) {
-            left = mid + 1;
-        } else {
-            right = mid - 1;
+        int left = 0, right = player->gameCount - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            if (player->gamesPlayed[mid].gameId == gameId) {
+                return true;
+            } else if (player->gamesPlayed[mid].gameId < gameId) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
         }
-        }
-    
-    return false;
+        return false;
     }
 
-
-
-
 private:
-    playerNode* insertRec(playerNode* node, string playerId, string name, string phoneNo, string email, string password, games_played_node* gamesPlayed, int gameCount) 
-    {
+    // Helper function to insert a node into the BST.
+    playerNode* insertRec(playerNode* node, string playerId, string name, string phoneNo, string email, string password, games_played_node* gamesPlayed, int gameCount) {
         if (node == nullptr) {
             playerNode* newNode = new playerNode(playerId, name, phoneNo, email, password, gameCount);
-            for (int i = 0; i < gameCount; i++) 
-            {
+            for (int i = 0; i < gameCount; i++) {
                 newNode->gamesPlayed[i] = gamesPlayed[i];
             }
             updateTopPlayers(newNode);
@@ -184,215 +161,218 @@ private:
             node->right = insertRec(node->right, playerId, name, phoneNo, email, password, gamesPlayed, gameCount);
         } else {
             cout << "Error: Player ID '" << playerId << "' already exists." << endl;
-            return node; 
+            return node;
         }
-
         return node;
     }
-    void updateTopPlayers(playerNode* newNode) 
-    {
-    int newCount = newNode->gameCount;
 
-    
-    for (int i = 0; i < 25; i++) {
-        if (topPlayers[i] == nullptr || newCount > topPlayers[i]->gameCount) {
-            for (int j = 24; j > i; j--) {
-                topPlayers[j] = topPlayers[j - 1];
+    // Updates the array of the top 25 players based on game count.
+    void updateTopPlayers(playerNode* newNode) {
+        int newCount = newNode->gameCount;
+        for (int i = 0; i < 25; i++) {
+            if (topPlayers[i] == nullptr || newCount > topPlayers[i]->gameCount) {
+                for (int j = 24; j > i; j--) {
+                    topPlayers[j] = topPlayers[j - 1];
+                }
+                topPlayers[i] = newNode;
+                break;
             }
-            topPlayers[i] = newNode;
-            break;
         }
     }
-    }
-    void printInOrder(playerNode* node, int& count) 
-    {
-    if (node == nullptr || count >= 10) return;
 
-    if (count < 10) printInOrder(node->left, count);
+    // Helper function for in-order traversal to print players.
+    void printInOrder(playerNode* node, int& count) {
+        if (node == nullptr || count >= 10) return;
+        if (count < 10) printInOrder(node->left, count);
 
-    if (count < 10) {
-        cout << "Player ID: " << node->playerId << ", Name: " << node->name
-             << ", Phone: " << node->phoneNo << ", Email: " << node->email
-             << ", Password: " << node->password << endl;
+        if (count < 10) {
+            cout << "Player ID: " << node->playerId << ", Name: " << node->name
+                 << ", Phone: " << node->phoneNo << ", Email: " << node->email
+                 << ", Password: " << node->password << endl;
 
-        cout << "Games Played:" << endl;
-        for (int i = 0; i < node->gameCount; i++) {
-            cout << "    Game ID: " << node->gamesPlayed[i].gameId << ", Hours Played: " << node->gamesPlayed[i].hoursPlayed
-                 << ", Achievements: " << node->gamesPlayed[i].achievements << endl;
+            cout << "Games Played:" << endl;
+            for (int i = 0; i < node->gameCount; i++) {
+                cout << "    Game ID: " << node->gamesPlayed[i].gameId << ", Hours Played: " << node->gamesPlayed[i].hoursPlayed
+                     << ", Achievements: " << node->gamesPlayed[i].achievements << endl;
+            }
+            count++;
         }
-        count++;
+
+        if (count < 10) printInOrder(node->right, count);
     }
 
-    if (count < 10) printInOrder(node->right, count);
-    }
-    playerNode* search(playerNode* node, const string& playerId) 
-    {
-        if (node == nullptr || node->playerId == playerId)
-            return node;
-
-        if (playerId < node->playerId)
-            return search(node->left, playerId);
-
+    // Helper function to search for a player by ID.
+    playerNode* search(playerNode* node, const string& playerId) {
+        if (node == nullptr || node->playerId == playerId) return node;
+        if (playerId < node->playerId) return search(node->left, playerId);
         return search(node->right, playerId);
     }
-    playerNode* deletePlayer(playerNode* node, const string& playerId) 
-    {
-    if (node == nullptr) return node;
 
-    if (playerId < node->playerId) {
-        node->left = deletePlayer(node->left, playerId);
-    } else if (playerId > node->playerId) {
-        node->right = deletePlayer(node->right, playerId);
-    } else {
-        if (node->left == nullptr) {
-            playerNode* temp = node->right;
-            delete node;
-            return temp;
-        } else if (node->right == nullptr) {
-            playerNode* temp = node->left;
-            delete node;
-            return temp;
+    // Helper function to delete a player from the BST.
+    playerNode* deletePlayer(playerNode* node, const string& playerId) {
+        if (node == nullptr) return node;
+        if (playerId < node->playerId) {
+            node->left = deletePlayer(node->left, playerId);
+        } else if (playerId > node->playerId) {
+            node->right = deletePlayer(node->right, playerId);
         } else {
-            playerNode* temp = findMin(node->right);
-            node->playerId = temp->playerId;
-            node->name = temp->name;
-            node->phoneNo = temp->phoneNo;
-            node->email = temp->email;
-            node->password = temp->password;
-            node->gameCount = temp->gameCount;
+            if (node->left == nullptr) {
+                playerNode* temp = node->right;
+                delete node;
+                return temp;
+            } else if (node->right == nullptr) {
+                playerNode* temp = node->left;
+                delete node;
+                return temp;
+            } else {
+                playerNode* temp = findMin(node->right);
+                node->playerId = temp->playerId;
+                node->name = temp->name;
+                node->phoneNo = temp->phoneNo;
+                node->email = temp->email;
+                node->password = temp->password;
+                node->gameCount = temp->gameCount;
 
-            delete[] node->gamesPlayed;
-            
-            node->gamesPlayed = new games_played_node[temp->gameCount];
-            for (int i = 0; i < temp->gameCount; ++i) {
-                node->gamesPlayed[i] = temp->gamesPlayed[i];
+                delete[] node->gamesPlayed;
+                node->gamesPlayed = new games_played_node[temp->gameCount];
+                for (int i = 0; i < temp->gameCount; ++i) {
+                    node->gamesPlayed[i] = temp->gamesPlayed[i];
+                }
+
+                node->right = deletePlayer(node->right, temp->playerId);
             }
-
-            node->right = deletePlayer(node->right, temp->playerId);
         }
-    }
-    return node;
+        return node;
     }
 
-    playerNode* findMin(playerNode* node) 
-    {
-    while (node && node->left != nullptr) {
-        node = node->left;
+    // Finds the minimum value node in the BST.
+    playerNode* findMin(playerNode* node) {
+        while (node && node->left != nullptr) {
+            node = node->left;
+        }
+        return node;
     }
-    return node;
-    }
-        bool findNode(playerNode* node, const string& playerId) {
+
+    // Checks if a node with the given player ID exists.
+    bool findNode(playerNode* node, const string& playerId) {
         if (node == nullptr) return false;
         if (node->playerId == playerId) return true;
-
         return findNode(node->left, playerId) || findNode(node->right, playerId);
     }
 
+    // Prints the path to a node with the given player ID.
     bool printPathToNode(playerNode* node, const string& playerId) {
         if (node == nullptr) return false;
-
         cout << node->playerId;
         if (node->playerId == playerId) return true;
-
-        cout << " -> "; 
-
+        cout << " -> ";
         if (printPathToNode(node->left, playerId) || printPathToNode(node->right, playerId)) {
             return true;
         }
         return false;
     }
-
 };
+
 
 class gameBST
 {
 public:
-    gameNode* root;
+    gameNode* root; // Root node of the BST
 
     gameBST() : root(nullptr) {}
 
+    // Inserts a new game into the BST
     void insert(string gameId, string name, string developer, string publisher, float fileSize, int downloads)
     {
         root = insertRec(root, gameId, name, developer, publisher, fileSize, downloads);
     }
 
+    // Prints the BST in in-order traversal (up to 10 nodes)
     void printGameBST()
     {
-        int count=0;
-        printInOrder(root,count);
+        int count = 0;
+        printInOrder(root, count);
     }
-    gameNode* searchGame(const string& gameId) 
+
+    // Searches for a game by its ID
+    gameNode* searchGame(const string& gameId)
     {
         return search(root, gameId);
     }
+
+    // Deletes a game by its ID
     void deleteGame(const string& gameId)
     {
-    root = deleteGame(root, gameId);
+        root = deleteGame(root, gameId);
     }
-    int getHeight(gameNode* node) 
+
+    // Returns the height of a node
+    int getHeight(gameNode* node)
     {
-    if (node == nullptr) return 0; 
+        if (node == nullptr) return 0; // Base case: null node has height 0
 
-    int leftHeight = getHeight(node->left);
-    int rightHeight = getHeight(node->right);
+        int leftHeight = getHeight(node->left);
+        int rightHeight = getHeight(node->right);
 
-    return 1 + max(leftHeight, rightHeight); 
+        return 1 + max(leftHeight, rightHeight); // Height is 1 + maximum height of subtrees
     }
 
-    int getNumberOfLayers() 
+    // Returns the number of layers in the BST
+    int getNumberOfLayers()
     {
-    return getHeight(root);
+        return getHeight(root);
     }
-    int getLayerNumber(gameNode* node, const string& gameId, int currentLayer = 1) 
+
+    // Finds the layer number where a specific game resides
+    int getLayerNumber(gameNode* node, const string& gameId, int currentLayer = 1)
     {
-    if (node == nullptr) {
-        return -1; 
+        if (node == nullptr) return -1; // Return -1 if game is not found
+
+        if (node->gameId == gameId) return currentLayer; // Found the game
+
+        int leftLayer = getLayerNumber(node->left, gameId, currentLayer + 1);
+        if (leftLayer != -1) return leftLayer; // Check left subtree
+
+        return getLayerNumber(node->right, gameId, currentLayer + 1); // Check right subtree
     }
 
-    if (node->gameId == gameId) {
-        return currentLayer; 
-    }
-
-    int leftLayer = getLayerNumber(node->left, gameId, currentLayer + 1);
-    if (leftLayer != -1) return leftLayer; 
-
-    return getLayerNumber(node->right, gameId, currentLayer + 1);
-    }
 private:
-     gameNode* insertRec(gameNode* node, string gameId, string name, string developer, string publisher, float fileSize, int downloads) {
+    // Helper function to insert a new game into the BST
+    gameNode* insertRec(gameNode* node, string gameId, string name, string developer, string publisher, float fileSize, int downloads)
+    {
         if (node == nullptr)
             return new gameNode(gameId, name, developer, publisher, fileSize, downloads);
 
-        if (gameId < node->gameId) {
+        if (gameId < node->gameId)
             node->left = insertRec(node->left, gameId, name, developer, publisher, fileSize, downloads);
-        } 
-        else if (gameId > node->gameId) {
+        else if (gameId > node->gameId)
             node->right = insertRec(node->right, gameId, name, developer, publisher, fileSize, downloads);
-        } 
-        else {
-            cout << "Error: Game ID '" << gameId << "' already exists." << endl;
-            return node;
-        }
+        else
+            cout << "Error: Game ID '" << gameId << "' already exists." << endl; // Duplicate game ID
 
         return node;
     }
 
-    void printInOrder(gameNode* node, int& count) {
-    if (node == nullptr || count >= 10) return;
+    // Helper function to print in-order traversal of the BST (up to 10 nodes)
+    void printInOrder(gameNode* node, int& count)
+    {
+        if (node == nullptr || count >= 10) return;
 
-    if (count < 10) printInOrder(node->left, count);
+        if (count < 10) printInOrder(node->left, count);
 
-    if (count < 10) {
-        cout << "Game ID: " << node->gameId << ", Name: " << node->name
-             << ", Developer: " << node->developer << ", Publisher: " << node->publisher
-             << ", File Size: " << node->fileSize << " MB, Downloads: " << node->downloads << endl;
-        count++; 
+        if (count < 10) {
+            cout << "Game ID: " << node->gameId << ", Name: " << node->name
+                 << ", Developer: " << node->developer << ", Publisher: " << node->publisher
+                 << ", File Size: " << node->fileSize << " MB, Downloads: " << node->downloads << endl;
+            count++;
+        }
+
+        if (count < 10) printInOrder(node->right, count);
     }
 
-    if (count < 10) printInOrder(node->right, count);
-}
-gameNode* search(gameNode* node, const string& gameId) 
- {
+    // Helper function to search for a game by its ID
+    gameNode* search(gameNode* node, const string& gameId)
+    {
         if (node == nullptr || node->gameId == gameId)
             return node;
 
@@ -400,57 +380,56 @@ gameNode* search(gameNode* node, const string& gameId)
             return search(node->left, gameId);
 
         return search(node->right, gameId);
-}
-gameNode* deleteGame(gameNode* node, const string& gameId) 
-{
-    if (node == nullptr) return node;
+    }
 
-    if (gameId < node->gameId) 
+    // Helper function to delete a game by its ID
+    gameNode* deleteGame(gameNode* node, const string& gameId)
     {
-        node->left = deleteGame(node->left, gameId);
-    }
-     else if (gameId > node->gameId)
-    {
-        node->right = deleteGame(node->right, gameId);
-    }
-    else
-    {
-        if (node->left == nullptr) 
+        if (node == nullptr) return node;
+
+        if (gameId < node->gameId)
+            node->left = deleteGame(node->left, gameId);
+        else if (gameId > node->gameId)
+            node->right = deleteGame(node->right, gameId);
+        else
         {
-            gameNode* temp = node->right;
-            delete node;
-            return temp;
+            if (node->left == nullptr)
+            {
+                gameNode* temp = node->right;
+                delete node;
+                return temp;
+            }
+            else if (node->right == nullptr)
+            {
+                gameNode* temp = node->left;
+                delete node;
+                return temp;
+            }
+            else
+            {
+                gameNode* temp = findMin(node->right);
+                node->gameId = temp->gameId;
+                node->name = temp->name;
+                node->developer = temp->developer;
+                node->publisher = temp->publisher;
+                node->fileSize = temp->fileSize;
+                node->downloads = temp->downloads;
+
+                node->right = deleteGame(node->right, temp->gameId);
+            }
         }
-        else if (node->right == nullptr) 
-        {
-            gameNode* temp = node->left;
-            delete node;
-            return temp;
-        } 
-        else 
-        {
-            gameNode* temp = findMin(node->right);
-            node->gameId = temp->gameId;
-            node->name = temp->name;
-            node->developer = temp->developer;
-            node->publisher = temp->publisher;
-            node->fileSize = temp->fileSize;
-            node->downloads = temp->downloads;
-
-            node->right = deleteGame(node->right, temp->gameId);
-        }
+        return node;
     }
-    return node;
-}
 
-gameNode* findMin(gameNode* node) 
-{
-    while (node && node->left != nullptr) 
+    // Helper function to find the minimum value node in the BST
+    gameNode* findMin(gameNode* node)
     {
-        node = node->left;
+        while (node && node->left != nullptr)
+        {
+            node = node->left;
+        }
+        return node;
     }
-    return node;
-}
 };
 
 
